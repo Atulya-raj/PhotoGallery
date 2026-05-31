@@ -9,8 +9,8 @@ export function Gallery({ favourites, dispatch }) {
   const [showFavourites, setShowFavourites] = useState(false);
   const [selectedPhoto, setSelectedPhoto] = useState(null);
   const [imageLoaded, setImageLoaded] = useState(false);
+  const [showBigHeart, setShowBigHeart] = useState(false);
 
-  // Cache photo objects to show favourites across refreshes
   const [photoCache, setPhotoCache] = useState(() => {
     const cached = localStorage.getItem("photo_cache");
     return cached ? JSON.parse(cached) : {};
@@ -50,7 +50,17 @@ export function Gallery({ favourites, dispatch }) {
   const handleSelectPhoto = useCallback((photo) => {
     setSelectedPhoto(photo);
     setImageLoaded(false);
+    setShowBigHeart(false);
   }, []);
+
+  const handleModalDoubleClick = useCallback((e) => {
+    e.stopPropagation();
+    setShowBigHeart(true);
+    setTimeout(() => setShowBigHeart(false), 800);
+    if (selectedPhoto && !favourites.includes(selectedPhoto.id)) {
+      dispatch({ type: "TOGGLE_FAVOURITE", payload: selectedPhoto.id });
+    }
+  }, [selectedPhoto, favourites, dispatch]);
 
   const handleSearch = useCallback((e) => {
     setQuery(e.target.value);
@@ -62,9 +72,9 @@ export function Gallery({ favourites, dispatch }) {
       // Reconstruct photo objects from cache using the IDs from the favourites array
       result = favourites.map(id => photoCache[id] || { id, author: "Unknown Photographer" });
     }
-    
+
     if (query.trim() === "") return result;
-    
+
     return result.filter((p) =>
       p.author.toLowerCase().includes(query.toLowerCase())
     );
@@ -136,8 +146,8 @@ export function Gallery({ favourites, dispatch }) {
             <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 text-white/20" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
             </svg>
-            {query.trim() === "" 
-              ? (showFavourites ? "You haven't liked any photos yet." : "No photos available.") 
+            {query.trim() === ""
+              ? (showFavourites ? "You haven't liked any photos yet." : "No photos available.")
               : `No photos found for "${query}"`}
           </div>
         ) : (
@@ -160,17 +170,17 @@ export function Gallery({ favourites, dispatch }) {
       {selectedPhoto && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-8 animate-fade-in">
           {/* Dynamic Resonating Background */}
-          <div 
+          <div
             className="absolute inset-0 bg-cover bg-center bg-no-repeat scale-110 transition-opacity duration-1000"
-            style={{ backgroundImage: `url(https://picsum.photos/id/${selectedPhoto.id}/400/300)`, filter: 'blur(80px) brightness(0.4)' }} 
+            style={{ backgroundImage: `url(https://picsum.photos/id/${selectedPhoto.id}/400/300)`, filter: 'blur(80px) brightness(0.4)' }}
           />
           {/* Overlay to add deep darkness */}
           <div className="absolute inset-0 bg-black/60"></div>
           {/* Film Grain/Noise Texture */}
           <div className="absolute inset-0 opacity-[0.15] mix-blend-overlay pointer-events-none" style={{ backgroundImage: "url('data:image/svg+xml,%3Csvg viewBox=%220 0 200 200%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cfilter id=%22noiseFilter%22%3E%3CfeTurbulence type=%22fractalNoise%22 baseFrequency=%220.8%22 numOctaves=%223%22 stitchTiles=%22stitch%22/%3E%3C/filter%3E%3Crect width=%22100%25%22 height=%22100%25%22 filter=%22url(%23noiseFilter)%22/%3E%3C/svg%3E')" }}></div>
-          
+
           <div className="absolute inset-0" onClick={() => setSelectedPhoto(null)}></div>
-          
+
           <div className="relative w-full max-w-5xl max-h-[90vh] flex flex-col bg-black/40 backdrop-blur-2xl border border-white/10 rounded-[2rem] overflow-hidden shadow-[0_30px_60px_rgba(0,0,0,0.7)]">
             {/* Header */}
             <div className="flex items-center justify-between p-4 px-6 border-b border-white/10 bg-black/20">
@@ -192,26 +202,36 @@ export function Gallery({ favourites, dispatch }) {
             </div>
             {/* Body */}
             <div className="flex-1 overflow-auto p-5 sm:p-8 flex flex-col">
-              <div className="relative w-full rounded-2xl overflow-hidden bg-black/40 border border-white/5 shadow-2xl flex items-center justify-center min-h-[300px] sm:min-h-[500px]">
+              <div
+                className="relative w-full rounded-2xl overflow-hidden bg-black/40 border border-white/5 shadow-2xl flex items-center justify-center min-h-[300px] sm:min-h-[500px] select-none cursor-pointer"
+                onDoubleClick={handleModalDoubleClick}
+              >
+                {/* Big Heart Animation Overlay for Modal */}
+                <div className={`absolute inset-0 z-30 flex items-center justify-center pointer-events-none transition-all duration-500 ${showBigHeart ? 'opacity-100 scale-100' : 'opacity-0 scale-50'}`}>
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 24 24"
+                    className="w-32 h-32 fill-white drop-shadow-[0_10px_20px_rgba(0,0,0,0.5)]"
+                  >
+                    <path d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z" />
+                  </svg>
+                </div>
+
                 {/* Loader */}
                 {!imageLoaded && (
                   <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-white/5 backdrop-blur-sm animate-pulse">
-                     <div className="w-12 h-12 border-4 border-white/20 border-t-white/80 rounded-full animate-spin"></div>
-                     <span className="text-white/50 text-sm font-medium tracking-widest uppercase">Loading High-Res</span>
+                    <div className="w-12 h-12 border-4 border-white/20 border-t-white/80 rounded-full animate-spin"></div>
+                    <span className="text-white/50 text-sm font-medium tracking-widest uppercase">Loading High-Res</span>
                   </div>
                 )}
-                <img 
-                  src={`https://picsum.photos/id/${selectedPhoto.id}/1200/800`} 
-                  alt={selectedPhoto.author} 
+                <img
+                  src={`https://picsum.photos/id/${selectedPhoto.id}/1200/800`}
+                  alt={selectedPhoto.author}
                   onLoad={() => setImageLoaded(true)}
-                  className={`w-full h-auto max-h-[65vh] object-cover transition-all duration-1000 ease-out ${imageLoaded ? 'opacity-100 scale-100 blur-0' : 'opacity-0 scale-95 blur-md'}`} 
+                  className={`w-full h-auto max-h-[65vh] object-cover transition-all duration-1000 ease-out pointer-events-none ${imageLoaded ? 'opacity-100 scale-100 blur-0' : 'opacity-0 scale-95 blur-md'}`}
                 />
               </div>
-              <div className="mt-8 flex flex-col gap-2">
-                <p className="text-white/80 text-base sm:text-lg leading-relaxed max-w-4xl font-light">
-                  In the dynamic chronicle of life, there exists a picture that encapsulates a truly memorable chapter. A tale of adventure, light, and the great outdoors, this photograph by <span className="text-white font-medium">{selectedPhoto.author}</span> paints more than a thousand words.
-                </p>
-              </div>
+
             </div>
           </div>
         </div>

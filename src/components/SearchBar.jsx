@@ -1,10 +1,8 @@
 export function SearchBar({ value, onSearch, onClear }) {
   return (
     <div className="relative group mx-auto w-full max-w-md">
-      {/* Glow effect on hover */}
       <div className="absolute inset-0 bg-white/20 rounded-full blur-xl group-hover:bg-white/30 transition duration-500 opacity-50"></div>
-      
-      {/* Pill-shaped glassmorphic input */}
+
       <div className="relative flex items-center bg-black/40 backdrop-blur-2xl border border-white/20 rounded-full overflow-hidden shadow-2xl transition-all duration-300 focus-within:border-white/40 focus-within:bg-black/50 focus-within:shadow-[0_0_20px_rgba(255,255,255,0.1)]">
         <div className="pl-6 text-white/60">
           <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
